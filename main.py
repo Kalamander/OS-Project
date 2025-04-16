@@ -14,6 +14,8 @@ from torch.utils.data import Dataset, DataLoader
 from model import Model
 from sklearn.metrics import accuracy_score, f1_score
 from transformers import T5Tokenizer, T5ForConditionalGeneration
+from dataset import configure_dataloaders
+
 
 
 
@@ -28,12 +30,22 @@ def train_or_eval_model(model, dataloader, optimizer=None, split="Train"):
         if split == "Train":
             optimizer.zero_grad()
 
-        content, l_cls = batch
+        #content, l_cls = batch
+        content, l_cls, answer = batch
         loss, p, p_cls= model(batch)
 
         preds.append(p)
-        preds_cls.append(p_cls)
-        labels_cls.append(l_cls)
+        flat_p_cls = []
+        for item in p_cls:
+            if isinstance(item, np.ndarray):
+                flat_p_cls.append(int(item[0]))  # or np.argmax(item) if it's a logits vector
+            else:
+                flat_p_cls.append(int(item))
+        preds_cls.append(flat_p_cls)
+        labels_cls.append(l_cls if isinstance(l_cls, list) else [l_cls])
+        
+        print("p_cls example:", p_cls)
+        print("l_cls example:", l_cls) 
 
         if split == "Train":
             loss.backward()
@@ -48,10 +60,10 @@ def train_or_eval_model(model, dataloader, optimizer=None, split="Train"):
     acc = round(accuracy_score(all_labels_cls, all_preds_cls), 4)
     f1 = round(f1_score(all_labels_cls, all_preds_cls, average="macro"), 4)
 
-
-    instance_preds = [item for sublist in preds for item in sublist]
-    instance_labels = np.array(all_labels_cls).reshape(-1, args.num_choices).argmax(1)
-    instance_acc = round(accuracy_score(instance_labels, instance_preds), 4)
+    instance_acc = acc
+    #instance_preds = [item for sublist in preds for item in sublist]
+    #instance_labels = np.array(all_labels_cls).reshape(-1, args.num_choices).argmax(1)
+    #instance_acc = round(accuracy_score(instance_labels, instance_preds), 4)
 
 
     return avg_loss, acc, instance_acc, f1
@@ -74,11 +86,20 @@ if __name__ == "__main__":
     parser.add_argument("--name", default="", help="Which model.")
     parser.add_argument('--shuffle', action='store_true', default=False, help="Shuffle train data such that positive and negative \
         sequences of the same question are not necessarily in the same batch.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode for faster time")
 
     global args
     args = parser.parse_args()
+    if args.debug:
+        print("DEBUG MODE ENABLED")
+        args.epochs = 1  # faster training loop
     print(args)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_name = args.name if args.name else "run"
+
+    lf_name = f"log_{run_name}_{timestamp}.txt"
+    fname = f"results_{run_name}_{timestamp}.txt"
 
     train_batch_size = args.bs
     eval_batch_size = args.eval_bs
@@ -94,8 +115,11 @@ if __name__ == "__main__":
         name=name,
         num_choices=num_choices
     ).cuda()
+    
+    print(torch.cuda.is_available())
+    print(next(model.parameters()).device)
 
-    sep_token = model.tokenizer.sep_token
+    sep_token = model.tokenizer_t5.sep_token
 
     optimizer = configure_optimizer(model, args)
 
@@ -103,6 +127,13 @@ if __name__ == "__main__":
         train_loader, val_loader, test_loader = configure_dataloaders(
             train_batch_size, eval_batch_size, shuffle
         )
+        
+        if args.debug:
+            # only use 2 batches worth of data to speed up time
+            from itertools import islice
+            train_loader = list(islice(train_loader, 2))
+            val_loader = list(islice(val_loader, 1))
+            test_loader = list(islice(test_loader, 1))
 
         train_loss, train_acc, _, train_f1 = train_or_eval_model(model, train_loader, optimizer, "Train")
         val_loss, val_acc, val_ins_acc, val_f1 = train_or_eval_model(model, val_loader, split="Val")

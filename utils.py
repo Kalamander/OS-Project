@@ -2,7 +2,6 @@ import os
 import random
 import torch
 from torch.optim import AdamW
-from model import Model
 from transformers import get_linear_schedule_with_warmup
 from transformers.trainer_pt_utils import get_parameter_names
 from transformers.optimization import Adafactor, get_scheduler
@@ -22,6 +21,7 @@ def cot(context):
 
 
 def got_step1(context):
+    from model import Model
     new_context = f'Given the context "{context}", '
     prompt = new_context + f'Based on common sense, which options are unreasonable and why?'
     return new_context, prompt
