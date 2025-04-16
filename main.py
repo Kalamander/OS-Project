@@ -44,8 +44,8 @@ def train_or_eval_model(model, dataloader, optimizer=None, split="Train"):
         preds_cls.append(flat_p_cls)
         labels_cls.append(l_cls if isinstance(l_cls, list) else [l_cls])
         
-        print("p_cls example:", p_cls)
-        print("l_cls example:", l_cls) 
+        #print("p_cls example:", p_cls)
+        #print("l_cls example:", l_cls) 
 
         if split == "Train":
             loss.backward()
@@ -116,8 +116,8 @@ if __name__ == "__main__":
         num_choices=num_choices
     ).cuda()
     
-    print(torch.cuda.is_available())
-    print(next(model.parameters()).device)
+    #print(torch.cuda.is_available())
+    #print(next(model.parameters()).device)
 
     sep_token = model.tokenizer_t5.sep_token
 

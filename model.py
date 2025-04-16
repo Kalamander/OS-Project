@@ -94,7 +94,7 @@ class Model(nn.Module):
                 voting_machine.vote(answer)
             out3 = voting_machine.get_results()
             outputs.append(out3)
-        print("outputs:", outputs)
+        #print("outputs:", outputs)
         batch = self.tokenizer_t5(
             list(outputs),  # force list just in case
             padding=True,
