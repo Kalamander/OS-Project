@@ -87,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('--shuffle', action='store_true', default=False, help="Shuffle train data such that positive and negative \
         sequences of the same question are not necessarily in the same batch.")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode for faster time")
+    parser.add_argument("--mode", type=str, default="rexgot", choices=["rexgot", "baseline"], help="Choose model reasoning mode")
 
     global args
     args = parser.parse_args()
@@ -113,7 +114,8 @@ if __name__ == "__main__":
 
     model = Model(
         name=name,
-        num_choices=num_choices
+        num_choices=num_choices,
+        mode=args.mode  # pass reasoning mode to model
     ).cuda()
     
     #print(torch.cuda.is_available())
