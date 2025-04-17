@@ -26,8 +26,13 @@ DEBUG MODE:
 python main.py --debug
 
 RUNNING MULTIPLE DEBUG RUNS EXAMPLE:
-python main.py --debug --name run1
-python main.py --debug --name run2
+python main.py --debug --mode baseline --name baseline_run1
+python main.py --debug --mode rexgot --name rexgot_run1
+
+FULL TRAINING:
+python main.py --mode baseline --name baseline_run1
+python main.py --mode rexgot --name rexgot_run1
+
 ...etc
 ```
 
